@@ -1,3 +1,5 @@
+## Prequ
+## create iam role that has all premissions >> cloudwatch, cloudwatch logs, ec2 >> add it to ec2 iam role config 
 ## HOW TO UPLOAD IT **
 ## it generates log files 
 ## 1. sudo su
@@ -11,7 +13,7 @@
 ## 7. run: aws logs put-log-events --log-group-name application-404-error-tracker --log-stream-name hostname --log-events file://events_all.json
 ## 7.1. it will fail becuase the log group is not created application-404-error-tracker & stream named hostname 
 ## 8. create the log group (it is in log management) >> add the application-404-error-tracker >> go into log group created and go into log stream >> add hostname for stream 
-## 9. run: aws logs put-log-events --log-group-name application-404-error-tracker --log-stream-name hostname --log-events file://events_all.json
+## 9. run: aws logs put-log-events --log-group-name application-404-error-tracker --log-stream-name hostname --log-events file://events_all.json (mke sure cloudwatch logs full permission is on to extract logs )
 
 
 #!/bin/bash
