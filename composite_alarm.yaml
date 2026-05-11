@@ -1,106 +1,117 @@
----
+## UPDATED FROM  THE ORIGINAL >> ROLLBACK LAST-TIME
 AWSTemplateFormatVersion: '2010-09-09'
-Description: CloudFormation Stack for EC2 Auto Scaling Group with latest Amazon Linux 2 AMI
+Description: EC2 Auto Scaling Group with Amazon Linux 2, Launch Template, CloudWatch alarms
 
 Parameters:
   LatestAmiId:
-    Description: The latest Amazon Linux 2 AMI
-    Type: 'AWS::SSM::Parameter::Value<String>'
-    Default: '/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2'
+    Description: Latest Amazon Linux 2 AMI
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2
+
+  VpcId:
+    Description: Select the VPC for the Auto Scaling Group
+    Type: AWS::EC2::VPC::Id
+
+  SubnetIds:
+    Description: Select at least 2 subnets for the Auto Scaling Group
+    Type: List<AWS::EC2::Subnet::Id>
 
 Resources:
 
   MyEC2SecurityGroup:
-    Type: 'AWS::EC2::SecurityGroup'
+    Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: EC2 Security Group for the Auto Scaling Group instances
+      GroupDescription: EC2 Security Group for ASG instances
+      VpcId: !Ref VpcId
       SecurityGroupIngress:
         - IpProtocol: tcp
-          FromPort: '22'
-          ToPort: '22'
+          FromPort: 22
+          ToPort: 22
           CidrIp: 0.0.0.0/0
 
-  LaunchConfiguration:
-    Type: 'AWS::AutoScaling::LaunchConfiguration'
+  LaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
     Properties:
-      ImageId: !Ref LatestAmiId
-      InstanceType: t2.micro # Choose your desired instance type
-      SecurityGroups:
-        - Ref: MyEC2SecurityGroup
+      LaunchTemplateData:
+        ImageId: !Ref LatestAmiId
+        InstanceType: t2.micro
+        SecurityGroupIds:
+          - !Ref MyEC2SecurityGroup
 
   AutoScalingGroup:
-    Type: 'AWS::AutoScaling::AutoScalingGroup'
+    Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
-      AvailabilityZones: 
-        Fn::GetAZs: ''  # All available AZs in the current region
-      LaunchConfigurationName: 
-        Ref: LaunchConfiguration
-      MinSize: '2'
-      MaxSize: '20'
-      DesiredCapacity: '2'
+      VPCZoneIdentifier: !Ref SubnetIds
+      LaunchTemplate:
+        LaunchTemplateId: !Ref LaunchTemplate
+        Version: !GetAtt LaunchTemplate.LatestVersionNumber
+      MinSize: 2
+      MaxSize: 20
+      DesiredCapacity: 2
       MetricsCollection:
-        - Granularity: 1Minute
+        - Granularity: "1Minute"
+          Metrics:
+            - GroupTotalInstances
 
   ScaleUpPolicy:
-    Type: 'AWS::AutoScaling::ScalingPolicy'
+    Type: AWS::AutoScaling::ScalingPolicy
     Properties:
-      AutoScalingGroupName:
-        Ref: AutoScalingGroup
+      AutoScalingGroupName: !Ref AutoScalingGroup
       AdjustmentType: ChangeInCapacity
-      ScalingAdjustment: '1'
-      Cooldown: '300'
+      ScalingAdjustment: 1
+      Cooldown: 300
 
   HighCpuAlarm:
-    Type: 'AWS::CloudWatch::Alarm'
+    Type: AWS::CloudWatch::Alarm
     Properties:
-      AlarmName: HighCPUUsage
-      AlarmDescription: Alarm when CPU exceeds 80 percent
+      AlarmName: !Sub "${AWS::StackName}-HighCPUUsage"
+      AlarmDescription: Alarm when average ASG CPU exceeds 80 percent
       Namespace: AWS/EC2
       MetricName: CPUUtilization
       Statistic: Average
-      Period: '300'
-      EvaluationPeriods: '1'
-      Threshold: '80'
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 80
       ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: AutoScalingGroupName
+          Value: !Ref AutoScalingGroup
       AlarmActions:
-        - Ref: ScaleUpPolicy
+        - !Ref ScaleUpPolicy
 
   HighASGSizeAlarm:
-    Type: 'AWS::CloudWatch::Alarm'
+    Type: AWS::CloudWatch::Alarm
     Properties:
-      AlarmName: HighASGSize
+      AlarmName: !Sub "${AWS::StackName}-HighASGSize"
       AlarmDescription: Alarm when ASG size exceeds 10
       Namespace: AWS/AutoScaling
       MetricName: GroupTotalInstances
       Statistic: Average
-      Period: '300'
-      EvaluationPeriods: '1'
-      Threshold: '10'
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 10
       ComparisonOperator: GreaterThanThreshold
       Dimensions:
         - Name: AutoScalingGroupName
-          Value:
-            Ref: AutoScalingGroup
+          Value: !Ref AutoScalingGroup
 
   VeryHighCpuAlarm:
-    Type: 'AWS::CloudWatch::Alarm'
+    Type: AWS::CloudWatch::Alarm
     Properties:
-      AlarmName: VeryHighCPUUsage
-      AlarmDescription: Alarm when CPU exceeds 90 percent
+      AlarmName: !Sub "${AWS::StackName}-VeryHighCPUUsage"
+      AlarmDescription: Alarm when average ASG CPU exceeds 90 percent
       Namespace: AWS/EC2
       MetricName: CPUUtilization
       Statistic: Average
-      Period: '300'
-      EvaluationPeriods: '1'
-      Threshold: '90'
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 90
       ComparisonOperator: GreaterThanThreshold
       Dimensions:
         - Name: AutoScalingGroupName
-          Value:
-            Ref: AutoScalingGroup
+          Value: !Ref AutoScalingGroup
 
 Outputs:
   AutoScalingGroupName:
     Description: The name of the Auto Scaling Group
-    Value: 
-      Ref: AutoScalingGroup
+    Value: !Ref AutoScalingGroup
