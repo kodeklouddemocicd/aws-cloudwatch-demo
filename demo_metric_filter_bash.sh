@@ -1,3 +1,19 @@
+## HOW TO UPLOAD IT **
+## it generates log files 
+## 1. sudo su
+## 2. cd 
+## 3.  vi generate_all.sh  >>> add the script 
+## 4. bash generate_all.sh >> activate the script 
+## 5.  ls -ls >> new file
+## 6.  tail -10 events_all.json << see the files generated 
+## HOW TO PUSH LOGS TO CLOUD WATCH CLI 
+## allows the logs to be filtered into log streams and log groups filtering for the important logs only 
+## 7. run: aws logs put-log-events --log-group-name application-404-error-tracker --log-stream-name hostname --log-events file://events_all.json
+## 7.1. it will fail becuase the log group is not created application-404-error-tracker & stream named hostname 
+## 8. create the log group (it is in log management) >> add the application-404-error-tracker >> go into log group created and go into log stream >> add hostname for stream 
+## 9. run: aws logs put-log-events --log-group-name application-404-error-tracker --log-stream-name hostname --log-events file://events_all.json
+
+
 #!/bin/bash
 
 # Number of messages to generate
