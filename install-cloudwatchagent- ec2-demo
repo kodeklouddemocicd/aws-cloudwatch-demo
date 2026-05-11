@@ -1,0 +1,18 @@
+## cloudwatchagent ______________________ DEMO
+# 1. keep all the configs from the first demo or make a role with permissons to cloudwatch, cloudwatch logs and ec2 create 
+# 2. add cloudagentserver to the iam role created 
+## 3. create a new ec2 
+## 4. sudo su
+## 5. cd 
+## 6. cd/var/log/
+## 7. ls -ls 
+## 8. cd audit 
+## 9. ls -la
+# 10. tail -100f audit.log >> unstructed logs of system 
+## install Cloudwatchangent use a go to a github 
+## 1. cd
+## 2. wget https://s3.amazonaws.com/amazoncloudwatch-agent/linux/amd64/latest/AmazonCloudWatchAgent.zip
+## 3. unzip AmazonCloudWatchAgent.zip 
+## 4. sudo ./install.sh  >> creates a user and group for cloudwatchagent
+## 5. vi cloudwatch-agent-config.json 
+## 5.1 change the file path to the unstructured logs >>> "var/log/audit.log"
